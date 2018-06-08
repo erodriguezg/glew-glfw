@@ -1,12 +1,21 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include <string.h>
+#include <cstring>
+#include <cmath>
+#include <stdlib.h>
 
 // windows dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 
 GLuint vaoId, vboId, programShaderId;
+
+GLint uniformXMoveId;
+
+bool direction = true;
+float triOffSet = 0.0f;
+float triMaxOffSet = 0.7f;
+float triIncrement = 0.0005f;
 
 /* Vertex Shader */
 
@@ -15,8 +24,11 @@ static const char* vShaderSource = "						\n\
 		                         							\n\
 		layout (location = 0) in vec3 pos;  	       		\n\
 												   			\n\
+		uniform float xMove;								\n\
+												   			\n\
+												   			\n\
 	    void main () {                                	 	 \n\
-			gl_Position = vec4(0.4 * pos.x, 0.4 * pos.y, pos.z, 1.0); 	\n\
+			gl_Position = vec4(0.4 * pos.x + xMove, 0.4 * pos.y, pos.z, 1.0); 	\n\
 		}";
 
 /* Fragment Shader */
@@ -75,7 +87,7 @@ void addShader(GLuint programId, const char* shaderCode, GLenum shaderType) {
 
 	glGetShaderiv(shaderId, GL_COMPILE_STATUS, &result);
 	if (!result) {
-		glGetShaderInfoLog(shaderId, sizeof(eLog), NULL, eLog);
+		glGetShaderInfoLog(shaderId, sizeof(eLog), nullptr, eLog);
 		std::cerr << "Error compiling the " << shaderType << " shader: " << eLog << std::endl;
 		return;
 	}
@@ -100,7 +112,7 @@ void compileShaders() {
 	glLinkProgram(programShaderId);
 	glGetProgramiv(programShaderId, GL_LINK_STATUS, &result);
 	if (!result) {
-		glGetProgramInfoLog(programShaderId, sizeof(eLog), NULL, eLog);
+		glGetProgramInfoLog(programShaderId, sizeof(eLog), nullptr, eLog);
 		std::cerr << "Error linking program: " << eLog << std::endl;
 		return;
 	}
@@ -108,11 +120,12 @@ void compileShaders() {
 	glValidateProgram(programShaderId);
 	glGetProgramiv(programShaderId, GL_VALIDATE_STATUS, &result);
 	if (!result) {
-		glGetProgramInfoLog(programShaderId, sizeof(eLog), NULL, eLog);
+		glGetProgramInfoLog(programShaderId, sizeof(eLog), nullptr, eLog);
 		std::cerr << "Error validating program: " << eLog << std::endl;
 		return;
 	}
 
+	uniformXMoveId = glGetUniformLocation(programShaderId, "xMove");
 }
 
 int main(int argc, char* args[]) {
@@ -138,7 +151,7 @@ int main(int argc, char* args[]) {
 	// Allow forward compatibility
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", NULL, NULL);
+	GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", nullptr, nullptr);
 
 	if (!mainWindow) {
 		std::cout << "GLFW window creation failed!" << std::endl;
@@ -175,11 +188,23 @@ int main(int argc, char* args[]) {
 		// Get + Handle user inputs events
 		glfwPollEvents();
 
+		if (direction) {
+			triOffSet += triIncrement;
+		} else {
+			triOffSet -= triIncrement;
+		}
+
+		if (abs(triOffSet) >= triMaxOffSet) {
+			direction = !direction;
+		}
+
 		// Clear window
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(programShaderId);
+
+		glUniform1f(uniformXMoveId, triOffSet);
 
 		glBindVertexArray(vaoId);
 
