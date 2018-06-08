@@ -4,13 +4,16 @@
 #include <cstring>
 #include <cmath>
 #include <stdlib.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // windows dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 
 GLuint vaoId, vboId, programShaderId;
 
-GLint uniformXMoveId;
+GLint uniformModelId;
 
 bool direction = true;
 float triOffSet = 0.0f;
@@ -24,11 +27,11 @@ static const char* vShaderSource = "						\n\
 		                         							\n\
 		layout (location = 0) in vec3 pos;  	       		\n\
 												   			\n\
-		uniform float xMove;								\n\
+		uniform mat4 model;			     					\n\
 												   			\n\
 												   			\n\
 	    void main () {                                	 	 \n\
-			gl_Position = vec4(0.4 * pos.x + xMove, 0.4 * pos.y, pos.z, 1.0); 	\n\
+			gl_Position = model * vec4(0.4 * pos.x, 0.4 * pos.y, pos.z, 1.0); 	\n\
 		}";
 
 /* Fragment Shader */
@@ -125,7 +128,7 @@ void compileShaders() {
 		return;
 	}
 
-	uniformXMoveId = glGetUniformLocation(programShaderId, "xMove");
+	uniformModelId = glGetUniformLocation(programShaderId, "model");
 }
 
 int main(int argc, char* args[]) {
@@ -204,7 +207,11 @@ int main(int argc, char* args[]) {
 
 		glUseProgram(programShaderId);
 
-		glUniform1f(uniformXMoveId, triOffSet);
+
+		glm::mat4 model;
+		model = glm::translate(model, glm::vec3(triOffSet, triOffSet, 0));
+
+        glUniformMatrix4fv(uniformModelId, 1, GL_FALSE, glm::value_ptr(model));
 
 		glBindVertexArray(vaoId);
 
